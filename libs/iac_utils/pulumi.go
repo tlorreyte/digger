@@ -118,8 +118,3 @@ func (tu PulumiUtils) SimilarityCheck(footprints []IacPlanFootprint) (bool, erro
 	return allSimilar, nil
 
 }
-
-func (tu PulumiUtils) GetSummarizePlan(planJson string) (string, error) {
-	// TODO: Implement me (equivalent of tfsummarize for pulumi)
-	return "", nil
-}

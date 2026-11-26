@@ -55,7 +55,6 @@ type IacUtils interface {
 	GetPlanFootprint(planJson string) (*IacPlanFootprint, error)
 	PerformPlanSimilarityCheck(footprint1 IacPlanFootprint, footprint2 IacPlanFootprint) (bool, error)
 	SimilarityCheck(footprints []IacPlanFootprint) (bool, error)
-	GetSummarizePlan(planJson string) (string, error)
 }
 
 func GetIacUtilsIacType(iacType scheduler.IacType) IacUtils {
