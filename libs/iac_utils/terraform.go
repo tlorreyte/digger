@@ -2,11 +2,8 @@ package iac_utils
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/dineshba/tf-summarize/terraformstate"
-	"github.com/dineshba/tf-summarize/writer"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/samber/lo"
 	"regexp"
@@ -46,17 +43,7 @@ func (tu TerraformUtils) GetSummaryFromPlanJson(planJson string) (bool, *IacSumm
 		}
 	}
 
-	planSummary := IacSummary{}
-	for _, resourceChange := range tfplan.ResourceChanges {
-		switch resourceChange.Change.Actions[0] {
-		case "create":
-			planSummary.ResourcesCreated++
-		case "delete":
-			planSummary.ResourcesDeleted++
-		case "update":
-			planSummary.ResourcesUpdated++
-		}
-	}
+	planSummary := CountPlanResourceChanges(planResourceChanges(tfplan))
 	return isPlanEmpty, &planSummary, nil
 }
 
@@ -118,18 +105,4 @@ func (tu TerraformUtils) SimilarityCheck(footprints []IacPlanFootprint) (bool, e
 	})
 	return allSimilar, nil
 
-}
-
-func (tu TerraformUtils) GetSummarizePlan(planJson string) (string, error) {
-	plan := tfjson.Plan{}
-	err := json.Unmarshal([]byte(planJson), &plan)
-	if err != nil {
-		return "", err
-	}
-
-	buf := new(bytes.Buffer)
-	w := writer.NewTableWriter(terraformstate.GetAllResourceChanges(plan), terraformstate.GetAllOutputChanges(plan), true)
-	w.Write(buf)
-
-	return buf.String(), nil
 }

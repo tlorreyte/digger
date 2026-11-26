@@ -63,9 +63,11 @@ NEXT STEPS:
    kubectl create secret generic digger-db-secret --from-literal=password=YOUR_PASSWORD
    kubectl create secret generic taco-db-secret --from-literal=password=YOUR_PASSWORD
    kubectl create secret generic drift-db-secret --from-literal=password=YOUR_PASSWORD
-   kubectl create secret generic workos-secrets \
-     --from-literal=api-key=YOUR_API_KEY \
-     --from-literal=cookie-password=YOUR_COOKIE_PASSWORD
+   kubectl create secret generic ui-secrets --from-env-file=.secrets/ui.env
+
+5. Deploy Dex for UI sign-in (GitHub connector, "digger-ui" static client):
+   helm repo add dex https://charts.dexidp.io
+   helm install dex dex/dex -f dex-values.yaml
 
 For more information, see:
   docs: https://docs.opentaco.dev

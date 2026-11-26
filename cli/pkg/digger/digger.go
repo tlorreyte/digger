@@ -315,7 +315,7 @@ func run(command string, job orchestrator.Job, policyChecker policy.Checker, org
 			return nil, msg, fmt.Errorf("%s", msg)
 		} else if planPerformed {
 			if isNonEmptyPlan {
-				reportTerraformPlanOutput(reporter, projectLock.LockId(), plan)
+				reportTerraformPlanOutput(reporter, projectLock.LockId(), plan, planJsonOutput)
 
 				planIsAllowed, messages, err := policyChecker.CheckPlanPolicy(SCMrepository, SCMOrganisation, job.ProjectName, job.ProjectDir, requestedBy, teams, approvals, approvalTeams, planJsonOutput)
 				if err != nil {
@@ -329,11 +329,6 @@ func run(command string, job orchestrator.Job, policyChecker policy.Checker, org
 					planPolicyFormatter = reporting.AsCollapsibleComment(summary, false)
 				} else {
 					planPolicyFormatter = reporting.AsComment(summary)
-				}
-
-				planSummary, err := iacUtils.GetSummarizePlan(planJsonOutput)
-				if err != nil {
-					slog.Error("Failed to summarize plan", "error", err)
 				}
 
 				if !planIsAllowed {
@@ -356,7 +351,6 @@ func run(command string, job orchestrator.Job, policyChecker policy.Checker, org
 					if err != nil {
 						slog.Error("Failed to report plan.", "error", err)
 					}
-					reportPlanSummary(reporter, planSummary)
 
 					if err := reporting.FormatAndReportExampleCommands(job.ProjectName, reporter); err != nil {
 						slog.Error("Failed to report example commands.", "error", err)
@@ -592,8 +586,23 @@ func reportApplyMergeabilityError(reporter reporting.Reporter) string {
 	return comment
 }
 
-func reportTerraformPlanOutput(reporter reporting.Reporter, projectId string, plan string) {
+func reportTerraformPlanOutput(reporter reporting.Reporter, projectId string, plan string, planJson string) {
 	var formatter func(string) string
+
+	// Pulumi preview json is not a terraform plan, so it fails to parse and keeps the full plan output.
+	changes, err := iac_utils.GetPlanResourceChanges(planJson)
+	if err == nil {
+		if reporter.SupportsMarkdown() {
+			formatter = reporting.AsCollapsibleComment("Plan summary", true)
+		} else {
+			formatter = reporting.AsComment("Plan summary")
+		}
+		_, _, err = reporter.Report("\n"+iac_utils.RenderPlanSummary(changes, reporter.SupportsMarkdown()), formatter)
+		if err != nil {
+			slog.Error("Failed to report plan summary.", "error", err)
+		}
+		return
+	}
 
 	if reporter.SupportsMarkdown() {
 		formatter = reporting.GetTerraformOutputAsCollapsibleComment("Plan output", true)
@@ -601,24 +610,9 @@ func reportTerraformPlanOutput(reporter reporting.Reporter, projectId string, pl
 		formatter = reporting.GetTerraformOutputAsComment("Plan output")
 	}
 
-	_, _, err := reporter.Report(plan, formatter)
+	_, _, err = reporter.Report(plan, formatter)
 	if err != nil {
 		slog.Error("Failed to report plan.", "error", err)
-	}
-}
-
-func reportPlanSummary(reporter reporting.Reporter, summary string) {
-	var formatter func(string) string
-
-	if reporter.SupportsMarkdown() {
-		formatter = reporting.AsCollapsibleComment("Plan summary", false)
-	} else {
-		formatter = reporting.AsComment("Plan summary")
-	}
-
-	_, _, err := reporter.Report("\n"+summary, formatter)
-	if err != nil {
-		slog.Error("Failed to report plan summary.", "error", err)
 	}
 }
 

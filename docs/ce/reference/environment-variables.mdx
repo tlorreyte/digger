@@ -399,26 +399,36 @@ Provides sandboxed execution environment for Terraform operations.
 
 Web interface for OpenTaco.
 
-### WorkOS Authentication
+### Dex Authentication
 
-<ParamField path="WORKOS_CLIENT_ID" type="string" required>
-  WorkOS client ID
+See [Dex Setup](/self-hosting/dex-setup).
+
+<ParamField path="DEX_ISSUER_URL" type="string" required>
+  Dex issuer URL (e.g., `http://localhost:5556/dex`). Must be reachable by both the browser and the UI server.
 </ParamField>
 
-<ParamField path="WORKOS_API_KEY" type="string" required>
-  WorkOS API key
+<ParamField path="DEX_CLIENT_ID" type="string" required>
+  Dex static client ID (e.g., `digger-ui`)
 </ParamField>
 
-<ParamField path="WORKOS_REDIRECT_URI" type="string" required>
-  OAuth redirect URI (e.g., `http://localhost:3000/api/auth/callback`)
+<ParamField path="DEX_CLIENT_SECRET" type="string" required>
+  Dex static client secret
 </ParamField>
 
-<ParamField path="WORKOS_COOKIE_PASSWORD" type="string" required>
-  Cookie encryption password (minimum 32 characters)
+<ParamField path="DEX_REDIRECT_URI" type="string" required>
+  OAuth redirect URI (e.g., `http://localhost:3030/api/auth/callback`). Must be listed in the Dex static client `redirectURIs`.
 </ParamField>
 
-<ParamField path="WORKOS_WEBHOOK_SECRET" type="string">
-  WorkOS webhook secret for verification
+<ParamField path="SESSION_COOKIE_PASSWORD" type="string" required>
+  Session cookie encryption password (minimum 32 characters)
+</ParamField>
+
+<ParamField path="SESSION_COOKIE_NAME" type="string" default="digger-session">
+  Session cookie name
+</ParamField>
+
+<ParamField path="SESSION_COOKIE_DOMAIN" type="string">
+  Session cookie domain. Unset by default (host-only cookie).
 </ParamField>
 
 

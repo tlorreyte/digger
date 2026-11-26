@@ -10,7 +10,7 @@ export async function fetchProject(projectId: string, organizationId: string, us
         'Authorization': `Bearer ${process.env.ORCHESTRATOR_BACKEND_SECRET}`,
         'DIGGER_ORG_ID': organizationId,
         'DIGGER_USER_ID': userId,
-        'DIGGER_ORG_SOURCE': 'workos',
+        'DIGGER_ORG_SOURCE': 'github',
         'X-Request-ID': generateRequestId(),
       },
     });
@@ -30,7 +30,7 @@ export async function fetchProjects(organizationId: string, userId: string) {
         'Authorization': `Bearer ${process.env.ORCHESTRATOR_BACKEND_SECRET}`,
         'DIGGER_ORG_ID': organizationId,
         'DIGGER_USER_ID': userId,
-        'DIGGER_ORG_SOURCE': 'workos',
+        'DIGGER_ORG_SOURCE': 'github',
         'X-Request-ID': generateRequestId(),
       },
     });
@@ -49,7 +49,7 @@ export async function updateProject(projectId: string, driftEnabled: boolean, or
             'Authorization': `Bearer ${process.env.ORCHESTRATOR_BACKEND_SECRET}`,
             'DIGGER_ORG_ID': organizationId,
             'DIGGER_USER_ID': userId,
-            'DIGGER_ORG_SOURCE': 'workos',
+            'DIGGER_ORG_SOURCE': 'github',
             'X-Request-ID': generateRequestId(),
         },
         body: JSON.stringify({

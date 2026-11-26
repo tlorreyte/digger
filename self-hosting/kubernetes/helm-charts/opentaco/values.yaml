@@ -21,11 +21,6 @@ global:
   
   # Image pull policy
   imagePullPolicy: IfNotPresent
-  
-  # Shared secrets (create these before deploying)
-  secrets:
-    # WorkOS authentication (required for UI)
-    workosSecretName: "workos-secrets"
 
 # ============================================================================
 # Database Configuration
@@ -299,7 +294,7 @@ taco-ui:
     #    memory: 1Gi
     #    cpu: 1000m
     
-    # For detailed configuration (WorkOS, PostHog, webhook secrets, etc.),
+    # For detailed configuration (Dex OIDC, session cookie, PostHog, etc.),
     # see self-hosting/kubernetes/helm-charts/taco-ui/values.yaml or use existingSecret above
 
 # ============================================================================

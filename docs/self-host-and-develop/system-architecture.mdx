@@ -39,6 +39,6 @@ This page provides a high-level architecture view and a quick reference for firs
 
 | Service | Purpose |
 | --- | --- |
-| **WorkOS** | Identity provider used for authentication and user/session management. |
+| **Dex** | Self-hosted OIDC provider used for authentication; signs users in with GitHub and exposes their GitHub orgs as OpenTaco organizations. |
 | **GitHub** | Source of webhook events and workflow execution target for PR automation and drift workflows. |
 | **E2B** | Provides ephemeral sandbox VMs for remote runs (used via Sidecar). |

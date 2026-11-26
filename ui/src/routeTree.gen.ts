@@ -13,18 +13,18 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TfeSplatRouteImport } from './routes/tfe/$'
+import { Route as OrchestratorGithubAppWebhookRouteImport } from './routes/orchestrator/github-app-webhook'
 import { Route as ManualTerraformWellKnownRouteImport } from './routes/manual/terraformWellKnown'
 import { Route as OrchestratorJob_artefactsRouteImport } from './routes/_orchestrator/job_artefacts'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/_dashboard'
 import { Route as OrchestratorGithubWebhookRouteImport } from './routes/orchestrator/github/webhook'
-import { Route as OrchestratorGithubCallbackRouteImport } from './routes/orchestrator/github/callback'
-import { Route as OrchestratorGithubExchangeCodeRouteImport } from './routes/orchestrator/github/exchange-code'
 import { Route as OrchestratorGithubSetupRouteImport } from './routes/orchestrator/github/setup'
+import { Route as OrchestratorGithubExchangeCodeRouteImport } from './routes/orchestrator/github/exchange-code'
+import { Route as OrchestratorGithubCallbackRouteImport } from './routes/orchestrator/github/callback'
 import { Route as AppSettingsTokensRouteImport } from './routes/app/settings.tokens'
-import { Route as ApiInternalSyncWorkosOrgsRouteImport } from './routes/api/internal/sync-workos-orgs'
+import { Route as ApiAuthSwitchOrgRouteImport } from './routes/api/auth/switch-org'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
-import { Route as ApiAuthWorkosWebhooksRouteImport } from './routes/api/auth/workos/webhooks'
-import { Route as ApiAuthWorkosSwitchOrgRouteImport } from './routes/api/auth/workos/switch-org'
 import { Route as OrchestratorReposNamespaceReportProjectsRouteImport } from './routes/_orchestrator/repos/$namespace/report-projects'
 import { Route as OrchestratorOrgsOrgIdPlan_policyRouteImport } from './routes/_orchestrator/orgs/$orgId.plan_policy'
 import { Route as OrchestratorOrgsOrgIdAccess_policyRouteImport } from './routes/_orchestrator/orgs/$orgId.access_policy'
@@ -67,6 +67,12 @@ const TfeSplatRoute = TfeSplatRouteImport.update({
   path: '/tfe/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrchestratorGithubAppWebhookRoute =
+  OrchestratorGithubAppWebhookRouteImport.update({
+    id: '/orchestrator/github-app-webhook',
+    path: '/orchestrator/github-app-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ManualTerraformWellKnownRoute =
   ManualTerraformWellKnownRouteImport.update({
     id: '/manual/terraformWellKnown',
@@ -89,22 +95,21 @@ const OrchestratorGithubWebhookRoute =
     path: '/orchestrator/github/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
-const OrchestratorGithubCallbackRoute =
-  OrchestratorGithubCallbackRouteImport.update({
-    id: '/orchestrator/github/callback',
-    path: '/orchestrator/github/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const OrchestratorGithubSetupRoute = OrchestratorGithubSetupRouteImport.update({
+  id: '/orchestrator/github/setup',
+  path: '/orchestrator/github/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrchestratorGithubExchangeCodeRoute =
   OrchestratorGithubExchangeCodeRouteImport.update({
     id: '/orchestrator/github/exchange-code',
     path: '/orchestrator/github/exchange-code',
     getParentRoute: () => rootRouteImport,
   } as any)
-const OrchestratorGithubSetupRoute =
-  OrchestratorGithubSetupRouteImport.update({
-    id: '/orchestrator/github/setup',
-    path: '/orchestrator/github/setup',
+const OrchestratorGithubCallbackRoute =
+  OrchestratorGithubCallbackRouteImport.update({
+    id: '/orchestrator/github/callback',
+    path: '/orchestrator/github/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
 const AppSettingsTokensRoute = AppSettingsTokensRouteImport.update({
@@ -112,25 +117,19 @@ const AppSettingsTokensRoute = AppSettingsTokensRouteImport.update({
   path: '/app/settings/tokens',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiInternalSyncWorkosOrgsRoute =
-  ApiInternalSyncWorkosOrgsRouteImport.update({
-    id: '/api/internal/sync-workos-orgs',
-    path: '/api/internal/sync-workos-orgs',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiAuthSwitchOrgRoute = ApiAuthSwitchOrgRouteImport.update({
+  id: '/api/auth/switch-org',
+  path: '/api/auth/switch-org',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
   id: '/api/auth/callback',
   path: '/api/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthWorkosWebhooksRoute = ApiAuthWorkosWebhooksRouteImport.update({
-  id: '/api/auth/workos/webhooks',
-  path: '/api/auth/workos/webhooks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthWorkosSwitchOrgRoute = ApiAuthWorkosSwitchOrgRouteImport.update({
-  id: '/api/auth/workos/switch-org',
-  path: '/api/auth/workos/switch-org',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrchestratorReposNamespaceReportProjectsRoute =
@@ -273,9 +272,11 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
   '/job_artefacts': typeof OrchestratorJob_artefactsRoute
   '/manual/terraformWellKnown': typeof ManualTerraformWellKnownRoute
+  '/orchestrator/github-app-webhook': typeof OrchestratorGithubAppWebhookRoute
   '/tfe/$': typeof TfeSplatRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
-  '/api/internal/sync-workos-orgs': typeof ApiInternalSyncWorkosOrgsRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/switch-org': typeof ApiAuthSwitchOrgRoute
   '/app/settings/tokens': typeof AppSettingsTokensRoute
   '/orchestrator/github/callback': typeof OrchestratorGithubCallbackRoute
   '/orchestrator/github/exchange-code': typeof OrchestratorGithubExchangeCodeRoute
@@ -290,8 +291,6 @@ export interface FileRoutesByFullPath {
   '/orgs/$orgId/access_policy': typeof OrchestratorOrgsOrgIdAccess_policyRoute
   '/orgs/$orgId/plan_policy': typeof OrchestratorOrgsOrgIdPlan_policyRoute
   '/repos/$namespace/report-projects': typeof OrchestratorReposNamespaceReportProjectsRoute
-  '/api/auth/workos/switch-org': typeof ApiAuthWorkosSwitchOrgRoute
-  '/api/auth/workos/webhooks': typeof ApiAuthWorkosWebhooksRoute
   '/dashboard/connections/$connectionId': typeof AuthenticatedDashboardDashboardConnectionsConnectionIdRoute
   '/dashboard/projects/$projectid': typeof AuthenticatedDashboardDashboardProjectsProjectidRoute
   '/dashboard/repos/$repoId': typeof AuthenticatedDashboardDashboardReposRepoIdRoute
@@ -311,9 +310,11 @@ export interface FileRoutesByTo {
   '/logout': typeof LogoutRoute
   '/job_artefacts': typeof OrchestratorJob_artefactsRoute
   '/manual/terraformWellKnown': typeof ManualTerraformWellKnownRoute
+  '/orchestrator/github-app-webhook': typeof OrchestratorGithubAppWebhookRoute
   '/tfe/$': typeof TfeSplatRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
-  '/api/internal/sync-workos-orgs': typeof ApiInternalSyncWorkosOrgsRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/switch-org': typeof ApiAuthSwitchOrgRoute
   '/app/settings/tokens': typeof AppSettingsTokensRoute
   '/orchestrator/github/callback': typeof OrchestratorGithubCallbackRoute
   '/orchestrator/github/exchange-code': typeof OrchestratorGithubExchangeCodeRoute
@@ -326,8 +327,6 @@ export interface FileRoutesByTo {
   '/orgs/$orgId/access_policy': typeof OrchestratorOrgsOrgIdAccess_policyRoute
   '/orgs/$orgId/plan_policy': typeof OrchestratorOrgsOrgIdPlan_policyRoute
   '/repos/$namespace/report-projects': typeof OrchestratorReposNamespaceReportProjectsRoute
-  '/api/auth/workos/switch-org': typeof ApiAuthWorkosSwitchOrgRoute
-  '/api/auth/workos/webhooks': typeof ApiAuthWorkosWebhooksRoute
   '/dashboard/connections/$connectionId': typeof AuthenticatedDashboardDashboardConnectionsConnectionIdRoute
   '/dashboard/projects/$projectid': typeof AuthenticatedDashboardDashboardProjectsProjectidRoute
   '/dashboard/repos/$repoId': typeof AuthenticatedDashboardDashboardReposRepoIdRoute
@@ -350,9 +349,11 @@ export interface FileRoutesById {
   '/_authenticated/_dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/_orchestrator/job_artefacts': typeof OrchestratorJob_artefactsRoute
   '/manual/terraformWellKnown': typeof ManualTerraformWellKnownRoute
+  '/orchestrator/github-app-webhook': typeof OrchestratorGithubAppWebhookRoute
   '/tfe/$': typeof TfeSplatRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
-  '/api/internal/sync-workos-orgs': typeof ApiInternalSyncWorkosOrgsRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/switch-org': typeof ApiAuthSwitchOrgRoute
   '/app/settings/tokens': typeof AppSettingsTokensRoute
   '/orchestrator/github/callback': typeof OrchestratorGithubCallbackRoute
   '/orchestrator/github/exchange-code': typeof OrchestratorGithubExchangeCodeRoute
@@ -367,8 +368,6 @@ export interface FileRoutesById {
   '/_orchestrator/orgs/$orgId/access_policy': typeof OrchestratorOrgsOrgIdAccess_policyRoute
   '/_orchestrator/orgs/$orgId/plan_policy': typeof OrchestratorOrgsOrgIdPlan_policyRoute
   '/_orchestrator/repos/$namespace/report-projects': typeof OrchestratorReposNamespaceReportProjectsRoute
-  '/api/auth/workos/switch-org': typeof ApiAuthWorkosSwitchOrgRoute
-  '/api/auth/workos/webhooks': typeof ApiAuthWorkosWebhooksRoute
   '/_authenticated/_dashboard/dashboard/connections/$connectionId': typeof AuthenticatedDashboardDashboardConnectionsConnectionIdRoute
   '/_authenticated/_dashboard/dashboard/projects/$projectid': typeof AuthenticatedDashboardDashboardProjectsProjectidRoute
   '/_authenticated/_dashboard/dashboard/repos/$repoId': typeof AuthenticatedDashboardDashboardReposRepoIdRoute
@@ -390,9 +389,11 @@ export interface FileRouteTypes {
     | '/logout'
     | '/job_artefacts'
     | '/manual/terraformWellKnown'
+    | '/orchestrator/github-app-webhook'
     | '/tfe/$'
     | '/api/auth/callback'
-    | '/api/internal/sync-workos-orgs'
+    | '/api/auth/login'
+    | '/api/auth/switch-org'
     | '/app/settings/tokens'
     | '/orchestrator/github/callback'
     | '/orchestrator/github/exchange-code'
@@ -407,8 +408,6 @@ export interface FileRouteTypes {
     | '/orgs/$orgId/access_policy'
     | '/orgs/$orgId/plan_policy'
     | '/repos/$namespace/report-projects'
-    | '/api/auth/workos/switch-org'
-    | '/api/auth/workos/webhooks'
     | '/dashboard/connections/$connectionId'
     | '/dashboard/projects/$projectid'
     | '/dashboard/repos/$repoId'
@@ -428,9 +427,11 @@ export interface FileRouteTypes {
     | '/logout'
     | '/job_artefacts'
     | '/manual/terraformWellKnown'
+    | '/orchestrator/github-app-webhook'
     | '/tfe/$'
     | '/api/auth/callback'
-    | '/api/internal/sync-workos-orgs'
+    | '/api/auth/login'
+    | '/api/auth/switch-org'
     | '/app/settings/tokens'
     | '/orchestrator/github/callback'
     | '/orchestrator/github/exchange-code'
@@ -443,8 +444,6 @@ export interface FileRouteTypes {
     | '/orgs/$orgId/access_policy'
     | '/orgs/$orgId/plan_policy'
     | '/repos/$namespace/report-projects'
-    | '/api/auth/workos/switch-org'
-    | '/api/auth/workos/webhooks'
     | '/dashboard/connections/$connectionId'
     | '/dashboard/projects/$projectid'
     | '/dashboard/repos/$repoId'
@@ -466,9 +465,11 @@ export interface FileRouteTypes {
     | '/_authenticated/_dashboard'
     | '/_orchestrator/job_artefacts'
     | '/manual/terraformWellKnown'
+    | '/orchestrator/github-app-webhook'
     | '/tfe/$'
     | '/api/auth/callback'
-    | '/api/internal/sync-workos-orgs'
+    | '/api/auth/login'
+    | '/api/auth/switch-org'
     | '/app/settings/tokens'
     | '/orchestrator/github/callback'
     | '/orchestrator/github/exchange-code'
@@ -483,8 +484,6 @@ export interface FileRouteTypes {
     | '/_orchestrator/orgs/$orgId/access_policy'
     | '/_orchestrator/orgs/$orgId/plan_policy'
     | '/_orchestrator/repos/$namespace/report-projects'
-    | '/api/auth/workos/switch-org'
-    | '/api/auth/workos/webhooks'
     | '/_authenticated/_dashboard/dashboard/connections/$connectionId'
     | '/_authenticated/_dashboard/dashboard/projects/$projectid'
     | '/_authenticated/_dashboard/dashboard/repos/$repoId'
@@ -506,9 +505,11 @@ export interface RootRouteChildren {
   LogoutRoute: typeof LogoutRoute
   OrchestratorJob_artefactsRoute: typeof OrchestratorJob_artefactsRoute
   ManualTerraformWellKnownRoute: typeof ManualTerraformWellKnownRoute
+  OrchestratorGithubAppWebhookRoute: typeof OrchestratorGithubAppWebhookRoute
   TfeSplatRoute: typeof TfeSplatRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
-  ApiInternalSyncWorkosOrgsRoute: typeof ApiInternalSyncWorkosOrgsRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthSwitchOrgRoute: typeof ApiAuthSwitchOrgRoute
   AppSettingsTokensRoute: typeof AppSettingsTokensRoute
   OrchestratorGithubCallbackRoute: typeof OrchestratorGithubCallbackRoute
   OrchestratorGithubExchangeCodeRoute: typeof OrchestratorGithubExchangeCodeRoute
@@ -517,8 +518,6 @@ export interface RootRouteChildren {
   OrchestratorOrgsOrgIdAccess_policyRoute: typeof OrchestratorOrgsOrgIdAccess_policyRoute
   OrchestratorOrgsOrgIdPlan_policyRoute: typeof OrchestratorOrgsOrgIdPlan_policyRoute
   OrchestratorReposNamespaceReportProjectsRoute: typeof OrchestratorReposNamespaceReportProjectsRoute
-  ApiAuthWorkosSwitchOrgRoute: typeof ApiAuthWorkosSwitchOrgRoute
-  ApiAuthWorkosWebhooksRoute: typeof ApiAuthWorkosWebhooksRoute
   OrchestratorReposNamespaceProjectsProjectNameAccess_policyRoute: typeof OrchestratorReposNamespaceProjectsProjectNameAccess_policyRoute
   OrchestratorReposNamespaceProjectsProjectNamePlan_policyRoute: typeof OrchestratorReposNamespaceProjectsProjectNamePlan_policyRoute
   OrchestratorReposNamespaceProjectsProjectNameJobsJobIdSetStatusRoute: typeof OrchestratorReposNamespaceProjectsProjectNameJobsJobIdSetStatusRoute
@@ -554,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TfeSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orchestrator/github-app-webhook': {
+      id: '/orchestrator/github-app-webhook'
+      path: '/orchestrator/github-app-webhook'
+      fullPath: '/orchestrator/github-app-webhook'
+      preLoaderRoute: typeof OrchestratorGithubAppWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manual/terraformWellKnown': {
       id: '/manual/terraformWellKnown'
       path: '/manual/terraformWellKnown'
@@ -575,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/orchestrator/github/webhook': {
+      id: '/orchestrator/github/webhook'
+      path: '/orchestrator/github/webhook'
+      fullPath: '/orchestrator/github/webhook'
+      preLoaderRoute: typeof OrchestratorGithubWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orchestrator/github/setup': {
       id: '/orchestrator/github/setup'
       path: '/orchestrator/github/setup'
@@ -587,13 +600,6 @@ declare module '@tanstack/react-router' {
       path: '/orchestrator/github/exchange-code'
       fullPath: '/orchestrator/github/exchange-code'
       preLoaderRoute: typeof OrchestratorGithubExchangeCodeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orchestrator/github/webhook': {
-      id: '/orchestrator/github/webhook'
-      path: '/orchestrator/github/webhook'
-      fullPath: '/orchestrator/github/webhook'
-      preLoaderRoute: typeof OrchestratorGithubWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orchestrator/github/callback': {
@@ -610,11 +616,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsTokensRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/internal/sync-workos-orgs': {
-      id: '/api/internal/sync-workos-orgs'
-      path: '/api/internal/sync-workos-orgs'
-      fullPath: '/api/internal/sync-workos-orgs'
-      preLoaderRoute: typeof ApiInternalSyncWorkosOrgsRouteImport
+    '/api/auth/switch-org': {
+      id: '/api/auth/switch-org'
+      path: '/api/auth/switch-org'
+      fullPath: '/api/auth/switch-org'
+      preLoaderRoute: typeof ApiAuthSwitchOrgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/callback': {
@@ -622,20 +635,6 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/callback'
       fullPath: '/api/auth/callback'
       preLoaderRoute: typeof ApiAuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/workos/webhooks': {
-      id: '/api/auth/workos/webhooks'
-      path: '/api/auth/workos/webhooks'
-      fullPath: '/api/auth/workos/webhooks'
-      preLoaderRoute: typeof ApiAuthWorkosWebhooksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/workos/switch-org': {
-      id: '/api/auth/workos/switch-org'
-      path: '/api/auth/workos/switch-org'
-      fullPath: '/api/auth/workos/switch-org'
-      preLoaderRoute: typeof ApiAuthWorkosSwitchOrgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_orchestrator/repos/$namespace/report-projects': {
@@ -921,21 +920,21 @@ const rootRouteChildren: RootRouteChildren = {
   LogoutRoute: LogoutRoute,
   OrchestratorJob_artefactsRoute: OrchestratorJob_artefactsRoute,
   ManualTerraformWellKnownRoute: ManualTerraformWellKnownRoute,
+  OrchestratorGithubAppWebhookRoute: OrchestratorGithubAppWebhookRoute,
   TfeSplatRoute: TfeSplatRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
-  ApiInternalSyncWorkosOrgsRoute: ApiInternalSyncWorkosOrgsRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthSwitchOrgRoute: ApiAuthSwitchOrgRoute,
   AppSettingsTokensRoute: AppSettingsTokensRoute,
-  OrchestratorGithubSetupRoute: OrchestratorGithubSetupRoute,
-  OrchestratorGithubExchangeCodeRoute: OrchestratorGithubExchangeCodeRoute,
   OrchestratorGithubCallbackRoute: OrchestratorGithubCallbackRoute,
+  OrchestratorGithubExchangeCodeRoute: OrchestratorGithubExchangeCodeRoute,
+  OrchestratorGithubSetupRoute: OrchestratorGithubSetupRoute,
   OrchestratorGithubWebhookRoute: OrchestratorGithubWebhookRoute,
   OrchestratorOrgsOrgIdAccess_policyRoute:
     OrchestratorOrgsOrgIdAccess_policyRoute,
   OrchestratorOrgsOrgIdPlan_policyRoute: OrchestratorOrgsOrgIdPlan_policyRoute,
   OrchestratorReposNamespaceReportProjectsRoute:
     OrchestratorReposNamespaceReportProjectsRoute,
-  ApiAuthWorkosSwitchOrgRoute: ApiAuthWorkosSwitchOrgRoute,
-  ApiAuthWorkosWebhooksRoute: ApiAuthWorkosWebhooksRoute,
   OrchestratorReposNamespaceProjectsProjectNameAccess_policyRoute:
     OrchestratorReposNamespaceProjectsProjectNameAccess_policyRoute,
   OrchestratorReposNamespaceProjectsProjectNamePlan_policyRoute:

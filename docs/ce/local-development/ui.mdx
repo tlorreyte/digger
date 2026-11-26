@@ -3,7 +3,7 @@ title: UI local setup
 description: Run the UI on your host, configure ngrok, and connect to backend/statesman in Docker or on host.
 ---
 
-The UI is a TanStack Start app that authenticates via WorkOS and calls both backend and statesman. It also acts as the public gateway when tunneling (e.g., ngrok): expose the UI port, and point external callbacks to the UI domain.
+The UI is a TanStack Start app that authenticates via Dex (OIDC, GitHub SSO) and calls both backend and statesman. It also acts as the public gateway when tunneling (e.g., ngrok): expose the UI port, and point external callbacks to the UI domain.
 
 Use this page when you want to run `ui/` outside Docker for fast frontend iteration.
 
@@ -35,12 +35,12 @@ Use the `ports:` mappings in `self-hosting/docker-compose/docker-compose.yml` as
    PUBLIC_URL=http://localhost:3030                            # replace with ngrok URL when exposing UI
    ALLOWED_HOSTS=localhost,127.0.0.1                           # include ngrok hostname when exposing UI
 
-   # WorkOS (User Management)
-   WORKOS_CLIENT_ID=<your_workos_client_id>
-   WORKOS_API_KEY=<your_workos_api_key>
-   WORKOS_COOKIE_PASSWORD=<32+ random chars>
-   WORKOS_REDIRECT_URI=http://localhost:3030/api/auth/callback # replace with ngrok callback URL; must match WorkOS config
-   WORKOS_WEBHOOK_SECRET=<if using webhooks locally via tunnel>
+   # Dex (OIDC)
+   DEX_ISSUER_URL=http://dex:5556/dex                         # must match the Dex issuer; needs "127.0.0.1 dex" in /etc/hosts
+   DEX_CLIENT_ID=digger-ui
+   DEX_CLIENT_SECRET=<DIGGER_UI_CLIENT_SECRET from dex.env>
+   DEX_REDIRECT_URI=http://localhost:3030/api/auth/callback   # replace with ngrok callback URL; must be in the Dex static client redirectURIs
+   SESSION_COOKIE_PASSWORD=<32+ random chars>
 
    # Backend
    ORCHESTRATOR_BACKEND_URL=http://localhost:3000
@@ -56,16 +56,16 @@ Use the `ports:` mappings in `self-hosting/docker-compose/docker-compose.yml` as
    DRIFT_REPORTING_BACKEND_WEBHOOK_SECRET=...
    POSTHOG_KEY=...
    ```
-   In WorkOS, add `http://localhost:3030/api/auth/callback` and your ngrok callback URL as redirects.
+   In `self-hosting/dex/config.yaml`, list `http://localhost:3030/api/auth/callback` and your ngrok callback URL in the `digger-ui` static client `redirectURIs`.
 2. Install deps and run:
    ```bash
    cd ui
    pnpm install   # or npm install
    pnpm dev --host --port 3030
    ```
-   Open `http://localhost:3030` (or your tunnel URL) and sign in with a WorkOS user that belongs to at least one org. Ensure the WorkOS redirect URI matches the public URL you configured.
+   Open `http://localhost:3030` (or your tunnel URL) and sign in with a GitHub user that belongs to an org allowed in the Dex config. Ensure `DEX_REDIRECT_URI` matches the public URL you configured.
 3. Ensure backend + statesman were started and the same secrets are in place (see [Backend](./backend) and [Statesman](./statesman)).
-4. Sync the WorkOS org/user to both services using the curl snippets on those pages (required for repos/units to load).
+4. The UI syncs your GitHub orgs and user to both services on sign-in. If repos/units do not load, sync them manually with the curl snippets on those pages.
 
 ## ngrok setup
 
@@ -76,7 +76,7 @@ ngrok http 3030
 After ngrok starts, update and restart UI:
 
 - `PUBLIC_URL=https://<your-ngrok-domain>`
-- `WORKOS_REDIRECT_URI=https://<your-ngrok-domain>/api/auth/callback`
+- `DEX_REDIRECT_URI=https://<your-ngrok-domain>/api/auth/callback` (also add it to the Dex static client `redirectURIs`)
 - `ALLOWED_HOSTS` includes `<your-ngrok-domain>`
 
 GitHub App callback/webhook URLs should also use the same UI tunnel domain.
@@ -85,5 +85,5 @@ GitHub App callback/webhook URLs should also use the same UI tunnel domain.
 
 - **NotFound/Forbidden listing units**: statesman org/user not synced or webhook secret mismatch.
 - **404 on repos or GitHub connect**: backend missing org/user, `DIGGER_ENABLE_API_ENDPOINTS` not set, or `ORCHESTRATOR_GITHUB_APP_URL` points to a non-existent path.
-- **WorkOS login succeeds but dashboard redirects to / or errors**: the signed-in user has no WorkOS org membership; add to an org and resync to services.
-- **WorkOS redirect blocked**: public URL not whitelisted; add your tunnel host to `ALLOWED_HOSTS` and to the WorkOS redirect URI list.
+- **Login succeeds but dashboard redirects to / or errors**: the Dex `groups` claim has no GitHub org; check `loadAllGroups` and `orgs` in the Dex config.
+- **Dex rejects the redirect**: the callback URL is not in the `digger-ui` static client `redirectURIs`; also add your tunnel host to `ALLOWED_HOSTS`.

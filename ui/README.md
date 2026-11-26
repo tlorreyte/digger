@@ -1,45 +1,29 @@
-# TanStack Start + WorkOS
+# Digger UI
 
-This site is built with TanStack Router! An example application demonstrating how to authenticate users with AuthKit and the WorkOS Node SDK.
+TanStack Start app. Users sign in through [Dex](https://dexidp.io) (OpenID Connect) with the Dex GitHub connector. Organizations are the user's GitHub organizations, read from the `groups` claim.
 
 - [TanStack Router Docs](https://tanstack.com/router)
 
-## Prerequisites
+## Running locally
 
-You will need a [WorkOS account](https://dashboard.workos.com/signup).
+1. Run Dex with a GitHub connector and a static client for this app. See `self-hosting/dex/config.yaml` and `docs/self-hosting/dex-setup.mdx`. The client's redirect URI must be `http://localhost:3030/api/auth/callback`.
 
-## Running the example
-
-1. In the [WorkOS dashboard](https://dashboard.workos.com), click on the User Management tile and set up the [sign-in callback redirect](https://workos.com/docs/user-management/1-configure-your-project/configure-a-redirect-uri) as `http://localhost:3000/api/auth/callback`. Once completed, set the app homepage URL to `http://localhost:3000`.
-
-   > [!NOTE]
-   > If you already have set up an application in your WorkOS dashboard, then you can simply head to the _Redirects_ tab and add a new redirect URI.
-
-2. After creating the redirect URI, navigate to the API keys tab and copy the _Client ID_ and the _Secret Key_. Rename the `.env.example` file to `.env` and supply your Client ID and API key as environment variables.
-
-3. Additionally, create a cookie password as the private key used to encrypt the session cookie. Copy the output into the environment variable `WORKOS_COOKIE_PASSWORD`.
-
-   It has to be at least 32 characters long. You can use https://1password.com/password-generator/ to generate strong passwords.
-
-4. Verify your `.env.local` file has the following variables filled.
+2. Copy `.env.example` to `.env` and fill in:
 
    ```bash
-   WORKOS_CLIENT_ID=<YOUR_CLIENT_ID>
-   WORKOS_API_KEY=<YOUR_API_SECRET_KEY>
-   WORKOS_COOKIE_PASSWORD=<YOUR_COOKIE_PASSWORD>
-   WORKOS_REDIRECT_URI=http://localhost:3000/callback
+   DEX_ISSUER_URL=http://localhost:5556/dex
+   DEX_CLIENT_ID=digger-ui
+   DEX_CLIENT_SECRET=<static client secret>
+   DEX_REDIRECT_URI=http://localhost:3030/api/auth/callback
+   SESSION_COOKIE_PASSWORD=<at least 32 characters>
    ```
 
-   `WORKOS_COOKIE_PASSWORD` is the private key used to encrypt the session cookie. It has to be at least 32 characters long. You can use the [1Password generator](https://1password.com/password-generator/) or the `openssl` library to generate a strong password via the command line:
+   `SESSION_COOKIE_PASSWORD` encrypts the session cookie. Generate one with:
 
    ```bash
-   openssl rand -base64 24
+   openssl rand -base64 32
    ```
 
-   To use the `signOut` method, you'll need to set a default Logout URI in your WorkOS dashboard settings under "Redirects".
+   Optional: `SESSION_COOKIE_NAME` (default `digger-session`) and `SESSION_COOKIE_DOMAIN`.
 
-5. Run the following command and navigate to [http://localhost:3000](http://localhost:3000).
-
-   ```bash
-   pnpm dev
-   ```
+3. Run `npm run dev` and open [http://localhost:3030](http://localhost:3030).

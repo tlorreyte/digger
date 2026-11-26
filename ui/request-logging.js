@@ -1,11 +1,10 @@
 import { unsealData } from 'iron-session';
-import { decodeJwt } from 'jose';
 
 // Request logging utilities
 export async function extractUserInfoFromRequest(req) {
   try {
-    const cookieName = process.env.WORKOS_COOKIE_NAME || 'wos-session';
-    const cookiePassword = process.env.WORKOS_COOKIE_PASSWORD;
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'digger-session';
+    const cookiePassword = process.env.SESSION_COOKIE_PASSWORD;
     
     if (!cookiePassword) {
       return { userId: 'anonymous', orgId: 'anonymous' };
@@ -31,18 +30,11 @@ export async function extractUserInfoFromRequest(req) {
       password: cookiePassword,
     });
     
-    if (!session?.user?.id || !session?.accessToken) {
+    if (!session?.user?.id) {
       return { userId: 'anonymous', orgId: 'anonymous' };
     }
-    
-    // Decode JWT to get organization ID
-    let orgId = 'anonymous';
-    try {
-      const decoded = decodeJwt(session.accessToken);
-      orgId = decoded.org_id || 'anonymous';
-    } catch (error) {
-      // If JWT decode fails, just use anonymous
-    }
+
+    const orgId = session.organizationId || 'anonymous';
     
     return { userId: session.user.id, orgId };
   } catch (error) {

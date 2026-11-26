@@ -46,26 +46,26 @@ If UI runs on host, use `ORCHESTRATOR_BACKEND_URL=http://localhost:3000` in `ui/
 ## Sync organization and user for UI flows
 
 - The UI calls `/api/*` and `/github/*` with `Authorization: Bearer $DIGGER_INTERNAL_SECRET` and `DIGGER_ORG_ID`/`DIGGER_USER_ID` headers.
-- You must upsert the WorkOS org + user the UI is authenticated as:
+- The UI upserts the GitHub org + user it is authenticated as on sign-in. To do it manually:
   ```bash
   SECRET=$DIGGER_INTERNAL_SECRET
-  ORG_ID=org_xxx                           # WorkOS org id
+  ORG_ID=my-github-org                     # GitHub org login
   ORG_NAME=my-org                          # slug shown in backend
   ADMIN_EMAIL=you@example.com
-  USER_ID=user_xxx                         # WorkOS user id
+  USER_ID=user_xxx                         # Dex user id (ID token "sub")
   USER_EMAIL=$ADMIN_EMAIL
 
   # org
   curl -s -X POST http://localhost:3000/_internal/api/upsert_org \
     -H "Authorization: Bearer $SECRET" \
     -H "Content-Type: application/json" \
-    -d '{"org_name":"'"$ORG_NAME"'","external_source":"workos","external_id":"'"$ORG_ID"'","admin_email":"'"$ADMIN_EMAIL"'"}'
+    -d '{"org_name":"'"$ORG_NAME"'","external_source":"github","external_id":"'"$ORG_ID"'","admin_email":"'"$ADMIN_EMAIL"'"}'
 
   # user
   curl -s -X POST http://localhost:3000/_internal/api/create_user \
     -H "Authorization: Bearer $SECRET" \
     -H "Content-Type: application/json" \
-    -d '{"external_source":"workos","external_id":"'"$USER_ID"'","email":"'"$USER_EMAIL"'","external_org_id":"'"$ORG_ID"'"}'
+    -d '{"external_source":"github","external_id":"'"$USER_ID"'","email":"'"$USER_EMAIL"'","external_org_id":"'"$ORG_ID"'"}'
   ```
 
 ## GitHub app integration

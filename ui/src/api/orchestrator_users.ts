@@ -9,7 +9,7 @@ export async function syncUserToBackend(userId: string, userEmail: string, orgId
         },
         body: JSON.stringify({ 
             external_id: userId,
-            external_source: "workos",
+            external_source: "github",
             external_org_id: orgId,
             email: userEmail,
         })

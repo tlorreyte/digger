@@ -56,6 +56,7 @@ Service-specific env examples live in this directory:
 - `drift.env.example`
 - `sidecar.env.example`
 - `ui.env.example`
+- `dex.env.example`
 
 Copy them to the `env_file` targets used by compose:
 
@@ -64,9 +65,22 @@ cp self-hosting/docker-compose/orchestrator.env.example self-hosting/docker-comp
 cp self-hosting/docker-compose/drift.env.example self-hosting/docker-compose/drift.env
 cp self-hosting/docker-compose/sidecar.env.example self-hosting/docker-compose/sidecar.env
 cp self-hosting/docker-compose/ui.env.example self-hosting/docker-compose/ui.env
+cp self-hosting/docker-compose/dex.env.example self-hosting/docker-compose/dex.env
 ```
 
 Each service now reads its own env file directly from `self-hosting/docker-compose/`.
+
+## Dex (UI sign-in)
+
+The `dex` service runs [Dex](https://dexidp.io) with `self-hosting/dex/config.yaml` and signs users in with GitHub. Edit the `orgs` list in that file, then create a GitHub OAuth app with callback URL `http://dex:5556/dex/callback`.
+
+The issuer is `http://dex:5556/dex` because the browser and the `ui` container must reach Dex at the same URL. Add this line to `/etc/hosts` on the machine running the browser:
+
+```text
+127.0.0.1 dex
+```
+
+See [Dex Setup](https://docs.opentaco.dev/self-hosting/dex-setup) for details.
 
 ## Drift scheduler
 
