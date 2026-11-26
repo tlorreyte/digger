@@ -1,10 +1,10 @@
 #!/bin/bash
 
 SECRET=topsecret                      # must match OPENTACO_ENABLE_INTERNAL_ENDPOINTS
-ORG_ID=org_xxx                        # your WorkOS org id
+ORG_ID=my-github-org                  # your GitHub org login
 ORG_NAME=my-org                       # internal org name/slug
 ORG_DISPLAY="My Org"                  # display name
-USER_ID=user_xxx                      # your WorkOS user id
+USER_ID=user_xxx                      # your Dex user id (ID token "sub")
 USER_EMAIL=you@example.com            # your email
 
 # create/sync org

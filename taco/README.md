@@ -100,20 +100,28 @@ make cli
 
 Configure OIDC so `taco login` works and protected endpoints require login.
 
-1) WorkOS setup
-- Create a User Management project and a Native (PKCE) OAuth application.
-- Add redirect URI: `http://localhost:8585/callback`.
+1) Dex setup
+- Add a public static client to your Dex config with redirect URI `http://localhost:8585/callback`:
+
+  ```yaml
+  staticClients:
+    - id: taco-cli
+      name: OpenTaco CLI
+      public: true
+      redirectURIs:
+        - http://localhost:8585/callback
+  ```
 - Note values:
-  - Client ID: `<WORKOS_CLIENT_ID>`
-  - Issuer: `https://api.workos.com/user_management`
-  - Authorization endpoint: `https://api.workos.com/user_management/authorize`
-  - Token endpoint: `https://api.workos.com/user_management/token`
+  - Client ID: `taco-cli`
+  - Issuer: `https://dex.example.com/dex`
+  - Authorization endpoint: `https://dex.example.com/dex/auth`
+  - Token endpoint: `https://dex.example.com/dex/token`
 
 2) Service config (verifies ID tokens and issues OpenTaco tokens)
 
 ```bash
-export OPENTACO_AUTH_ISSUER="https://api.workos.com/user_management"
-export OPENTACO_AUTH_CLIENT_ID="<WORKOS_CLIENT_ID>"
+export OPENTACO_AUTH_ISSUER="https://dex.example.com/dex"
+export OPENTACO_AUTH_CLIENT_ID="taco-cli"
 ./statesman -storage memory
 ```
 
@@ -122,10 +130,10 @@ export OPENTACO_AUTH_CLIENT_ID="<WORKOS_CLIENT_ID>"
 ```bash
 ./taco login \
   --server http://localhost:8080 \
-  --issuer https://api.workos.com/user_management \
-  --client-id <WORKOS_CLIENT_ID> \
-  --auth-url https://api.workos.com/user_management/authorize \
-  --token-url https://api.workos.com/user_management/token
+  --issuer https://dex.example.com/dex \
+  --client-id taco-cli \
+  --auth-url https://dex.example.com/dex/auth \
+  --token-url https://dex.example.com/dex/token
 ```
 
 This opens a browser (also prints the URL). After you authenticate, the CLI exchanges the OIDC ID token with the service and saves OpenTaco tokens to `~/.config/opentaco/credentials.json`. To force the login box even if an SSO session exists, add `--force-login`.

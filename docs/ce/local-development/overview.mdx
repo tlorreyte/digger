@@ -22,18 +22,18 @@ make -C self-hosting/docker-compose all-up
 # make all-up
 ```
 
-Use ngrok on the UI port (`3030`) when testing WorkOS and GitHub callbacks.
+Use ngrok on the UI port (`3030`) when testing GitHub callbacks from a public URL. Sign-in goes through the `dex` service; see [Dex Setup](/self-hosting/dex-setup).
 
 ## Core services
 
 - **Backend** (`backend/`, port 3000 by default) – orchestrator + REST APIs for repos/orgs/jobs.
 - **Statesman** (`taco/cmd/statesman`, port 8080) – state storage API and Terraform Cloud-compatible endpoints.
-- **UI** (`ui/`, port 3030) – TanStack Start frontend that talks to both services and WorkOS. When tunneling (e.g., ngrok), expose the UI host; WorkOS and GitHub callbacks should point to the UI domain.
+- **UI** (`ui/`, port 3030) – TanStack Start frontend that talks to both services and to Dex for sign-in. When tunneling (e.g., ngrok), expose the UI host; GitHub App callbacks should point to the UI domain.
 
 ## Prerequisites
 
 - Go toolchain for backend + statesman, Node 18+ for UI (`pnpm` or `npm`).
-- A WorkOS project with User Management enabled and at least one organization + member (needed for UI auth and org IDs).
+- A GitHub OAuth app for the Dex GitHub connector, and membership in at least one GitHub org allowed in `self-hosting/dex/config.yaml` (your GitHub orgs become your OpenTaco orgs).
 - Optional: GitHub App for repo onboarding (the backend can help you create one via `/github/setup`).
 
 ## Shared secrets and ports
@@ -93,14 +93,14 @@ Use ngrok on the UI port (`3030`) when testing WorkOS and GitHub callbacks.
 ## What remains important
 
 - Shared secret alignment across backend, statesman, and UI.
-- WorkOS organization/user sync into backend and statesman for authenticated UI flows.
+- GitHub org/user sync into backend and statesman for authenticated UI flows (the UI does this on sign-in).
 - GitHub App callback/webhook URLs pointing to the public UI domain.
 
 ## Troubleshooting cheatsheet
 
 - **Backend /api/* returns 404**: `DIGGER_ENABLE_API_ENDPOINTS` not `true` or org not upserted.
 - **Statesman 403**: webhook secret mismatch. **Statesman 404/500 resolving org**: org not synced (missing `external_org_id`).
-- **UI WorkOS auth succeeds but org is empty**: add membership in WorkOS and resync org/user to services.
+- **UI sign-in succeeds but org is empty**: the Dex `groups` claim has no GitHub org; check `loadAllGroups` and the `orgs` list in the Dex config, and that the GitHub OAuth app is approved for the org.
 - **GitHub connect opens 404**: set `ORCHESTRATOR_GITHUB_APP_URL` to a valid install/setup URL.
 
 Continue with the per-service pages for commands and env examples.

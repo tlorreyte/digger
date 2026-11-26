@@ -1,268 +1,179 @@
-import { redirect } from '@tanstack/react-router';
-import { getCookie, setCookie } from '@tanstack/react-start/server';
+import { deleteCookie, getCookie, setCookie } from '@tanstack/react-start/server';
 import { sealData, unsealData } from 'iron-session';
-import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose';
-import { getConfig } from './config';
-import { lazy } from './utils';
-import { getWorkOS } from './workos';
-import type { AccessToken, AuthenticationResponse } from '@workos-inc/node';
-import type { AuthkitOptions, AuthkitResponse, CookieOptions, GetAuthURLOptions, Session } from './interfaces';
+import { decodeJwt } from 'jose';
+import { getAuthConfig } from './config';
+import {
+  buildAuthorizationUrl,
+  exchangeCode,
+  organizationsFromGroups,
+  randomToken,
+  refreshTokens,
+  verifyIdToken,
+  type IdTokenClaims,
+  type TokenSet,
+} from './oidc';
 
-const sessionHeaderName = 'x-workos-session';
-const middlewareHeaderName = 'x-workos-middleware';
+export type User = {
+  id: string;
+  email: string;
+  name?: string;
+};
 
-export function getAuthorizationUrl(options: GetAuthURLOptions = {}) {
-  const { returnPathname, screenHint, redirectUri } = options;
+export type Session = {
+  idToken: string;
+  refreshToken?: string;
+  user: User;
+  organizationId: string;
+};
 
-  return getWorkOS().userManagement.getAuthorizationUrl({
-    provider: 'authkit',
-    clientId: getConfig('clientId'),
-    redirectUri: redirectUri || getConfig('redirectUri'),
-    state: returnPathname ? btoa(JSON.stringify({ returnPathname })) : undefined,
-    screenHint,
-  });
-}
+export type UserInfo = {
+  user: User;
+  organizationId: string;
+  organizations: string[];
+};
 
-export function serializeCookie(name: string, value: string, options: Partial<CookieOptions> = {}): string {
-  const {
-    path = '/',
-    maxAge = getConfig('cookieMaxAge'),
-    secure = options.sameSite === 'none' ? true : getConfig('redirectUri').startsWith('https:'),
-    sameSite = 'lax',
-    domain = getConfig('cookieDomain'),
-  } = options;
+export type NoUserInfo = {
+  user: null;
+  organizationId?: undefined;
+  organizations?: undefined;
+};
 
-  let cookie = `${name}=${encodeURIComponent(value)}; Path=${path}; sameSite=${sameSite}; HttpOnly`;
-  cookie += `; Max-Age=${maxAge}`;
-  if (!maxAge) cookie += `; Expires=${new Date(0).toUTCString()}`;
-  if (secure) cookie += '; Secure';
-  if (domain) cookie += `; Domain=${domain}`;
+type PendingLogin = {
+  state: string;
+  nonce: string;
+  codeVerifier: string;
+  returnPathname: string;
+};
 
-  return cookie;
-}
+const LOGIN_TTL_SECONDS = 600;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 400;
+const EXPIRY_SKEW_SECONDS = 30;
 
-export async function decryptSession(encryptedSession: string): Promise<Session> {
-  const cookiePassword = getConfig('cookiePassword');
-  return unsealData<Session>(encryptedSession, {
-    password: cookiePassword,
-  });
-}
-
-export async function encryptSession(session: Session) {
-  return sealData(session, {
-    password: getConfig('cookiePassword'),
-    ttl: 0,
-  });
-}
-
-export async function withAuth() {
-  const session = await getSessionFromCookie();
-
-  if (!session?.user) {
-    return { user: null };
-  }
-
-  const {
-    sid: sessionId,
-    org_id: organizationId,
-    role,
-    permissions,
-    entitlements,
-  } = decodeJwt<AccessToken>(session.accessToken);
-
+function cookieOptions(maxAge: number) {
+  const { redirectUri, cookieDomain } = getAuthConfig();
   return {
-    sessionId,
-    user: session.user,
-    organizationId,
-    role,
-    permissions,
-    entitlements,
-    impersonator: session.impersonator,
-    accessToken: session.accessToken,
+    path: '/',
+    httpOnly: true,
+    secure: redirectUri.startsWith('https:'),
+    sameSite: 'lax' as const,
+    maxAge,
+    domain: cookieDomain,
   };
 }
 
-export async function getSessionFromCookie() {
-  const cookieName = getConfig('cookieName') || 'wos-session';
-  const cookie = getCookie(cookieName);
-
-  if (cookie) {
-    return decryptSession(cookie);
-  }
+function loginCookieName() {
+  return `${getAuthConfig().cookieName}-login`;
 }
 
-export async function saveSession(sessionOrResponse: Session | AuthenticationResponse): Promise<void> {
-  const cookieName = getConfig('cookieName') || 'wos-session';
-  const encryptedSession = await encryptSession(sessionOrResponse);
-  setCookie(cookieName, encryptedSession);
+function seal(data: object): Promise<string> {
+  return sealData(data, { password: getAuthConfig().cookiePassword, ttl: 0 });
 }
 
-// JWKS call only happens once and the result is cached. The lazy function ensures that
-// the JWK set is only created when it's needed, and not before.
-const JWKS = lazy(() => createRemoteJWKSet(new URL(getWorkOS().userManagement.getJwksUrl(getConfig('clientId')))));
-
-async function verifyAccessToken(accessToken: string): Promise<boolean> {
+async function unseal<T>(cookie: string | undefined): Promise<T | undefined> {
+  if (!cookie) return undefined;
   try {
-    await jwtVerify(accessToken, JWKS());
-    return true;
+    return await unsealData<T>(cookie, { password: getAuthConfig().cookiePassword });
   } catch {
-    return false;
+    return undefined;
   }
 }
 
-function getReturnPathname(url: string): string {
-  const newUrl = new URL(url);
-
-  return `${newUrl.pathname}${newUrl.searchParams.size > 0 ? '?' + newUrl.searchParams.toString() : ''}`;
+function safeReturnPathname(pathname: string | undefined): string {
+  return pathname && pathname.startsWith('/') && !pathname.startsWith('//') ? pathname : '/';
 }
 
-export async function updateSession(
-  request: Request,
-  options: AuthkitOptions = { debug: false },
-): Promise<AuthkitResponse> {
-  const session = await getSessionFromCookie();
+function sessionFromTokens(tokens: TokenSet, claims: IdTokenClaims, preferredOrganization?: string): Session | null {
+  const organizations = organizationsFromGroups(claims.groups);
+  if (organizations.length === 0) return null;
+  return {
+    idToken: tokens.idToken,
+    refreshToken: tokens.refreshToken,
+    user: { id: claims.sub, email: claims.email ?? '', name: claims.name ?? claims.preferred_username },
+    organizationId:
+      preferredOrganization && organizations.includes(preferredOrganization) ? preferredOrganization : organizations[0],
+  };
+}
 
-  const newRequestHeaders = new Headers();
+export function organizationsOf(session: Session): string[] {
+  return organizationsFromGroups(decodeJwt<IdTokenClaims>(session.idToken).groups);
+}
 
-  // Record that the request was routed through the middleware so we can check later for DX purposes
-  newRequestHeaders.set(middlewareHeaderName, 'true');
+export async function saveSession(session: Session): Promise<void> {
+  setCookie(getAuthConfig().cookieName, await seal(session), cookieOptions(SESSION_MAX_AGE_SECONDS));
+}
 
-  // We store the current request url in a custom header, so we can always have access to it
-  // This is because on hard navigations we don't have access to `next-url` but need to get the current
-  // `pathname` to be able to return the users where they came from before sign-in
-  newRequestHeaders.set('x-url', request.url);
+export function clearSession(): void {
+  deleteCookie(getAuthConfig().cookieName, cookieOptions(0));
+}
 
-  if (options.redirectUri) {
-    // Store the redirect URI in a custom header, so we always have access to it and so that subsequent
-    // calls to `getAuthorizationUrl` will use the same redirect URI
-    newRequestHeaders.set('x-redirect-uri', options.redirectUri);
-  }
+function isExpired(idToken: string): boolean {
+  const { exp } = decodeJwt(idToken);
+  return exp !== undefined && exp - EXPIRY_SKEW_SECONDS <= Date.now() / 1000;
+}
 
-  newRequestHeaders.delete(sessionHeaderName);
-
-  if (!session) {
-    if (options.debug) {
-      console.log('No session found from cookie');
-    }
-
-    return {
-      session: { user: null },
-      headers: newRequestHeaders,
-      authorizationUrl: getAuthorizationUrl({
-        returnPathname: getReturnPathname(request.url),
-        redirectUri: options.redirectUri || getConfig('redirectUri'),
-        screenHint: options.screenHint,
-      }),
-    };
-  }
-
-  const hasValidSession = await verifyAccessToken(session.accessToken);
-
-  const cookieName = getConfig('cookieName') || 'wos-session';
-
-  if (hasValidSession) {
-    newRequestHeaders.set(sessionHeaderName, getCookie(cookieName)!);
-
-    const {
-      sid: sessionId,
-      org_id: organizationId,
-      role,
-      permissions,
-      entitlements,
-    } = decodeJwt<AccessToken>(session.accessToken);
-
-    return {
-      session: {
-        sessionId,
-        user: session.user,
-        organizationId,
-        role,
-        permissions,
-        entitlements,
-        impersonator: session.impersonator,
-        accessToken: session.accessToken,
-      },
-      headers: newRequestHeaders,
-    };
-  }
-
+async function refreshSession(session: Session): Promise<Session | null> {
+  if (!session.refreshToken) return null;
   try {
-    if (options.debug) {
-      // istanbul ignore next
-      console.log(
-        `Session invalid. ${session.accessToken ? `Refreshing access token that ends in ${session.accessToken.slice(-10)}` : 'Access token missing.'}`,
-      );
-    }
-
-    const { org_id: organizationIdFromAccessToken } = decodeJwt<AccessToken>(session.accessToken);
-
-    const { accessToken, refreshToken, user, impersonator } =
-      await getWorkOS().userManagement.authenticateWithRefreshToken({
-        clientId: getConfig('clientId'),
-        refreshToken: session.refreshToken,
-        organizationId: organizationIdFromAccessToken,
-      });
-
-    if (options.debug) {
-      console.log('Session successfully refreshed');
-    }
-    // Encrypt session with new access and refresh tokens
-    const encryptedSession = await encryptSession({
-      accessToken,
-      refreshToken,
-      user,
-      impersonator,
-    });
-
-    newRequestHeaders.append('Set-Cookie', serializeCookie(cookieName, encryptedSession));
-    newRequestHeaders.set(sessionHeaderName, encryptedSession);
-
-    const {
-      sid: sessionId,
-      org_id: organizationId,
-      role,
-      permissions,
-      entitlements,
-    } = decodeJwt<AccessToken>(accessToken);
-
-    return {
-      session: {
-        sessionId,
-        user,
-        organizationId,
-        role,
-        permissions,
-        entitlements,
-        impersonator,
-        accessToken,
-      },
-      headers: newRequestHeaders,
-    };
-  } catch (e) {
-    if (options.debug) {
-      console.log('Failed to refresh. Deleting cookie.', e);
-    }
-
-    // When we need to delete a cookie, return it as a header as you can't delete cookies from edge middleware
-    const deleteCookie = serializeCookie(cookieName, '', { maxAge: 0 });
-    newRequestHeaders.append('Set-Cookie', deleteCookie);
-
-    return {
-      session: { user: null },
-      headers: newRequestHeaders,
-      authorizationUrl: getAuthorizationUrl({
-        returnPathname: getReturnPathname(request.url),
-      }),
-    };
+    const tokens = await refreshTokens(session.refreshToken);
+    const claims = await verifyIdToken(tokens.idToken);
+    return sessionFromTokens(
+      { idToken: tokens.idToken, refreshToken: tokens.refreshToken ?? session.refreshToken },
+      claims,
+      session.organizationId,
+    );
+  } catch (error) {
+    console.error('Failed to refresh session', error);
+    return null;
   }
 }
 
-export async function terminateSession({ returnTo }: { returnTo?: string } = {}) {
-  const { sessionId } = await withAuth();
-  if (sessionId) {
-    const href = getWorkOS().userManagement.getLogoutUrl({ sessionId, returnTo });
-    return redirect({ href, throw: true, reloadDocument: true });
+export async function getSessionFromCookie(): Promise<Session | null> {
+  const session = await unseal<Session>(getCookie(getAuthConfig().cookieName));
+  if (!session?.idToken) return null;
+  if (!isExpired(session.idToken)) return session;
+
+  const refreshed = await refreshSession(session);
+  if (refreshed) {
+    await saveSession(refreshed);
+  } else {
+    clearSession();
+  }
+  return refreshed;
+}
+
+export async function withAuth(): Promise<UserInfo | NoUserInfo> {
+  const session = await getSessionFromCookie();
+  if (!session) return { user: null };
+  return { user: session.user, organizationId: session.organizationId, organizations: organizationsOf(session) };
+}
+
+export async function startLogin(returnPathname: string | undefined): Promise<string> {
+  const pending: PendingLogin = {
+    state: randomToken(),
+    nonce: randomToken(),
+    codeVerifier: randomToken(),
+    returnPathname: safeReturnPathname(returnPathname),
+  };
+  setCookie(loginCookieName(), await seal(pending), cookieOptions(LOGIN_TTL_SECONDS));
+  return buildAuthorizationUrl(pending);
+}
+
+export type LoginResult =
+  | { status: 'ok'; session: Session; returnPathname: string }
+  | { status: 'no_organization'; email?: string };
+
+export async function completeLogin(code: string, state: string): Promise<LoginResult> {
+  const pending = await unseal<PendingLogin>(getCookie(loginCookieName()));
+  deleteCookie(loginCookieName(), cookieOptions(0));
+  if (!pending || pending.state !== state) {
+    throw new Error('Invalid or expired login state');
   }
 
-  return redirect({ to: returnTo ?? '/', throw: true, reloadDocument: true });
+  const tokens = await exchangeCode(code, pending.codeVerifier);
+  const claims = await verifyIdToken(tokens.idToken, pending.nonce);
+  const session = sessionFromTokens(tokens, claims);
+  if (!session) return { status: 'no_organization', email: claims.email };
+
+  await saveSession(session);
+  return { status: 'ok', session, returnPathname: pending.returnPathname };
 }

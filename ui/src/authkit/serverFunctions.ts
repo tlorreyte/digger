@@ -1,160 +1,25 @@
 import { createServerFn } from '@tanstack/react-start';
-import { deleteCookie } from '@tanstack/react-start/server';
-import { getConfig } from './ssr/config';
-import { terminateSession, withAuth } from './ssr/session';
-import { getWorkOS } from './ssr/workos';
-import type { GetAuthURLOptions, NoUserInfo, UserInfo } from './ssr/interfaces';
-import { Organization } from '@workos-inc/node';
-import { WidgetScope } from 'node_modules/@workos-inc/node/lib/widgets/interfaces/get-token';
-import { syncOrgToBackend } from '@/api/orchestrator_orgs';
-import { syncOrgToStatesman } from '@/api/statesman_orgs';
-import { serverCache } from '@/lib/cache.server';
-import { requireAuth } from '@/api/helpers';
-
-export const getAuthorizationUrl = createServerFn({ method: 'GET' })
-  .inputValidator((options?: GetAuthURLOptions) => options)
-  .handler(({ data: options = {} }) => {
-    const { returnPathname, screenHint, redirectUri } = options;
-
-    return getWorkOS().userManagement.getAuthorizationUrl({
-      provider: 'authkit',
-      clientId: getConfig('clientId'),
-      redirectUri: redirectUri || getConfig('redirectUri'),
-      state: returnPathname ? btoa(JSON.stringify({ returnPathname })) : undefined,
-      screenHint,
-    });
-  });
-
-export const getOrganisationDetails = createServerFn({method: 'GET'})
-  .inputValidator((data: {organizationId: string}) => data)
-  .handler(async ({data: {organizationId}}) : Promise<Organization> => {
-    // Check cache first
-    const cached = serverCache.getOrg(organizationId);
-    if (cached) {
-      console.log(`✅ Cache hit for org: ${organizationId}`);
-      return cached;
-    }
-    
-    // Cache miss - fetch from WorkOS
-    console.log(`❌ Cache miss for org: ${organizationId}, fetching from WorkOS...`);
-    const organization = await getWorkOS().organizations.getOrganization(organizationId);
-    
-    // Store in cache
-    serverCache.setOrg(organizationId, organization);
-    
-    return organization;
-});
-
-
-export const createOrganization = createServerFn({method: 'POST'})
-  .inputValidator((data: {name: string}) => data)
-  .handler(async ({data: {name}}) : Promise<Organization> => {
-    const auth = await requireAuth();
-    try {
-      const organization = await getWorkOS().organizations.createOrganization({ name: name });
-
-      await getWorkOS().userManagement.createOrganizationMembership({
-        organizationId: organization.id,
-        userId: auth.userId,
-        roleSlug: "admin",
-      });
-
-      try {
-        await syncOrgToBackend(organization.id, organization.name, auth.email);
-        await syncOrgToStatesman(organization.id, organization.name, organization.name, auth.userId, auth.email);
-      } catch (error) {
-        console.error('Error syncing organization to backend:', error);
-        throw error;
-      }
-
-      return organization;
-    } catch (error) {
-      console.error('Error creating organization:', error);
-      throw error;
-    }
-  });
+import { redirect } from '@tanstack/react-router';
+import { clearSession, withAuth } from './ssr/session';
+import type { NoUserInfo, UserInfo } from './ssr/session';
 
 export const getSignInUrl = createServerFn({ method: 'GET' })
   .inputValidator((data?: string) => data)
   .handler(async ({ data: returnPathname }) => {
-    return await getAuthorizationUrl({ data: { returnPathname, screenHint: 'sign-in' } });
-  });
-
-export const getSignUpUrl = createServerFn({ method: 'GET' })
-  .inputValidator((data?: string) => data)
-  .handler(async ({ data: returnPathname }) => {
-    return getAuthorizationUrl({ data: { returnPathname, screenHint: 'sign-up' } });
+    const params = returnPathname ? `?${new URLSearchParams({ returnPathname })}` : '';
+    return `/api/auth/login${params}`;
   });
 
 export const signOut = createServerFn({ method: 'POST' })
   .inputValidator((data?: string) => data)
   .handler(async ({ data: returnTo }) => {
-    const cookieName = getConfig('cookieName') || 'wos_session';
-    deleteCookie(cookieName);
-    await terminateSession({ returnTo });
+    clearSession();
+    throw redirect({ href: returnTo || '/', reloadDocument: true });
   });
 
-export const getAuth = createServerFn({ method: 'GET' }).handler(async (): Promise<{auth: UserInfo | NoUserInfo, organisationId: string }> => {
-  const auth = await withAuth();
-  const organisationId = auth.organizationId!;
-  return {auth, organisationId};
-});
-
-export const getOrganization = createServerFn({method: 'GET'})
-    .inputValidator((data: {organizationId: string}) => data)
-    .handler(async ({data: {organizationId}}) : Promise<Organization> => {
-  // Check cache first
-  const cached = serverCache.getOrg(organizationId);
-  if (cached) {
-    return cached;
-  }
-  
-  // Cache miss - fetch from WorkOS
-  const organization = await getWorkOS().organizations.getOrganization(organizationId);
-  serverCache.setOrg(organizationId, organization);
-  
-  return organization;
-});
-
-export const ensureOrgExists = createServerFn({method: 'GET'})
-    .inputValidator((data: {organizationId: string}) => data)
-    .handler(async ({data: {organizationId}}) : Promise<Organization> => {
-  // Check cache first
-  const cached = serverCache.getOrg(organizationId);
-  if (cached) {
-    return cached;
-  }
-  
-  // Cache miss - fetch from WorkOS
-  const organization = await getWorkOS().organizations.getOrganization(organizationId);
-  serverCache.setOrg(organizationId, organization);
-  
-  return organization;
-});
-
-
-export const getWidgetsAuthToken = createServerFn({method: 'GET'})
-    .inputValidator((args: {scopes?: WidgetScope[]}) => args)
-    .handler(async ({data: {scopes}}) : Promise<string> => {
-  const auth = await requireAuth();
-  // Check cache first
-  const cached = serverCache.getWidgetToken(auth.userId, auth.organizationId);
-  if (cached) {
-    console.debug(`✅ Widget token cache hit for ${auth.userId}:${auth.organizationId}`);
-    return cached;
-  }
-
-  // Cache miss - generate new token
-  console.debug(`❌ Widget token cache miss, generating new token for ${auth.userId}:${auth.organizationId}`);
-  const token = await getWorkOS().widgets.getToken({
-    userId: auth.userId,
-    organizationId: auth.organizationId,
-    scopes: scopes ?? ['widgets:users-table:manage'] as WidgetScope[],
-  });
-
-  // Store in cache
-  serverCache.setWidgetToken(auth.userId, auth.organizationId, token);
-
-  return token;
-})
-
+export const getAuth = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<{ auth: UserInfo | NoUserInfo; organisationId?: string }> => {
+    const auth = await withAuth();
+    return { auth, organisationId: auth.organizationId };
+  },
+);

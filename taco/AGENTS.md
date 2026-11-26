@@ -222,7 +222,7 @@ This repo includes comprehensive authentication supporting both OpenTaco's nativ
 - **Dual Token System**: JWT (stateless) + Opaque tokens (TFE compat) issued simultaneously
 - **HA-Ready JWT Signing**: Ed25519 PEM keys shared across instances for stateless verification
 - **OAuth State Encryption**: AES-256-GCM encrypted session data in URL parameters (no server-side storage)
-- **OIDC Provider Integration**: Generic support for Auth0, Okta, WorkOS, Azure AD, etc.
+- **OIDC Provider Integration**: Generic support for Auth0, Okta, Dex, Azure AD, etc.
 - **TFE API Compatibility**: Full Terraform Enterprise endpoint compatibility with opaque token storage
 
 **New packages:**

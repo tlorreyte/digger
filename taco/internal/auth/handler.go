@@ -315,12 +315,6 @@ func (h *Handler) Config(c echo.Context) error {
     authURL := os.Getenv("OPENTACO_AUTH_AUTH_URL")
     tokenURL := os.Getenv("OPENTACO_AUTH_TOKEN_URL")
 
-    // Provide sensible defaults for common issuers if endpoints are not supplied
-    if (authURL == "" || tokenURL == "") && issuer == "https://api.workos.com/user_management" {
-        if authURL == "" { authURL = "https://api.workos.com/user_management/authorize" }
-        if tokenURL == "" { tokenURL = "https://api.workos.com/user_management/token" }
-    }
-
     logger.Info("Serving auth config",
         "operation", "config",
         "issuer", issuer,

@@ -93,7 +93,7 @@ body {
   }
 }
 
-/* Radix Themes / WorkOS widgets: ensure dropdown/poppers render above app chrome */
+/* Radix Themes: ensure dropdown/poppers render above app chrome */
 [data-radix-popper-content-wrapper] {
   z-index: 9999 !important;
 }

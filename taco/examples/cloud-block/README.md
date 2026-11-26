@@ -78,7 +78,7 @@ The authentication process follows OAuth2 with PKCE:
 
 1. Terraform generates a code challenge
 2. Browser opens to OpenTaco's authorization endpoint
-3. User authenticates with OIDC provider (WorkOS, Auth0, etc.)
+3. User authenticates with OIDC provider (Dex, Auth0, etc.)
 4. OpenTaco returns authorization code
 5. Terraform exchanges code for access/refresh tokens
 6. Tokens are stored in `~/.terraform.d/credentials.tfrc.json`

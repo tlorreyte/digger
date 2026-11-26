@@ -144,14 +144,14 @@ Edit each file in `.secrets/` with your actual credentials:
 ├── digger-backend.env  # GitHub App, database, Sentry, etc.
 ├── drift.env           # GitHub App, database connection
 ├── statesman.env       # Auth0, S3, PostgreSQL (Cloud SQL)
-└── ui.env             # WorkOS, backend service URLs
+└── ui.env             # Dex OIDC client, session cookie, backend service URLs
 ```
 
 **Key values to configure:**
 - GitHub App credentials (create at https://github.com/settings/apps)
 - Database connection strings
 - S3/storage credentials
-- Authentication providers (WorkOS, Auth0)
+- Authentication providers (Dex, Auth0)
 
 ### 3. Create Kubernetes Secrets
 
@@ -377,7 +377,7 @@ self-hosting/kubernetes/helm-charts/
 ## Required External Services
 
 - **GitHub App** - Repository access and webhooks
-- **WorkOS** - UI authentication (or configure alternative)
+- **Dex** - UI authentication via GitHub SSO; deploy with the official chart from https://charts.dexidp.io (see https://docs.opentaco.dev/self-hosting/dex-setup)
 - **Auth0** - Statesman authentication (or configure alternative)
 - **S3-compatible storage** - State and artifact storage
 - **Cloud SQL or PostgreSQL** - Database

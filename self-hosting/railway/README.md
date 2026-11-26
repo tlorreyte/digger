@@ -8,7 +8,7 @@ Use the OpenTaco Railway template to provision the full stack, then configure th
 
 1. Start from the template.
 2. Set pre-deploy values:
-   - WorkOS values for the UI service
+   - Dex values for the UI service (`DEX_*` and `SESSION_COOKIE_PASSWORD`); Dex itself is deployed separately
    - `GITHUB_ORG` for the orchestrator service
 3. Provision services in Railway.
 4. Configure a public domain (Railway-generated or custom CNAME).

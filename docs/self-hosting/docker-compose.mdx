@@ -16,7 +16,10 @@ cp self-hosting/docker-compose/orchestrator.env.example self-hosting/docker-comp
 cp self-hosting/docker-compose/drift.env.example self-hosting/docker-compose/drift.env
 cp self-hosting/docker-compose/sidecar.env.example self-hosting/docker-compose/sidecar.env
 cp self-hosting/docker-compose/ui.env.example self-hosting/docker-compose/ui.env
+cp self-hosting/docker-compose/dex.env.example self-hosting/docker-compose/dex.env
 ```
+
+The stack runs [Dex](https://dexidp.io) for sign-in with the issuer `http://dex:5556/dex`. Add `127.0.0.1 dex` to `/etc/hosts` so your browser reaches Dex at the same URL as the UI container. See [Dex Setup](./dex-setup).
 
 ## Start the stack with Make targets
 
@@ -77,6 +80,7 @@ Verify current values in `self-hosting/docker-compose/docker-compose.yml`, espec
 | `statesman` | `8080` | `8080` |
 | `token-service` | `8081` | `8081` |
 | `ui` | `3030` | `3030` |
+| `dex` | `5556` | `5556` |
 | `sidecar` | `9100` | `9100` |
 | `postgres-orchestrator` | `5432` | `5432` |
 | `postgres-statesman` | `5433` | `5432` |

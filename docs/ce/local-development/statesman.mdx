@@ -37,7 +37,7 @@ For persisted/queryable data, switch to Postgres-backed settings used by Compose
 
 ## Sync organization and user for UI flows
 
-Statesman resolves tenants by `external_org_id` (WorkOS org id). If missing, UI unit queries fail.
+Statesman resolves tenants by `external_org_id` (GitHub org login). The UI syncs it on sign-in; if missing, UI unit queries fail.
 
 ```bash
 SECRET=$OPENTACO_ENABLE_INTERNAL_ENDPOINTS

@@ -1,13 +1,11 @@
 import radixCssUrl from '@radix-ui/themes/styles.css?url';
-import workosWidgetsCssUrl from '@workos-inc/widgets/styles.css?url';
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import { getAuth, getOrganisationDetails, getSignInUrl } from '@/authkit/serverFunctions';
+import { getAuth, getSignInUrl } from '@/authkit/serverFunctions';
 import type { ReactNode } from 'react';
 import globalCssUrl from '@/styles/global.css?url';
 import { Toaster } from '@/components/ui/toaster';
 import { getPublicServerConfig } from '@/lib/env.server';
-import type { Organization } from '@workos-inc/node';
 
 // PostHog integration
 import { PostHogProvider } from 'posthog-js/react';
@@ -21,14 +19,13 @@ export const Route = createRootRoute({
     ]);
     
     const { auth, organisationId } = authResult;
-    
-    // Get org details if we have an orgId (this depends on auth)
-    let organisationDetails: Organization | null = null;
-    if (organisationId) {
-      organisationDetails = await getOrganisationDetails({data: {organizationId: organisationId}});
-    }
-    ;
-    return { user: auth.user, organisationId, role: auth.role, organisationName: organisationDetails?.name, publicServerConfig };
+    return {
+      user: auth.user,
+      organisationId,
+      organisationName: organisationId,
+      organizations: auth.organizations ?? [],
+      publicServerConfig,
+    };
   },
   head: () => ({
     meta: [
@@ -76,8 +73,6 @@ function DashboardRootDocument({ children, publicServerConfig }: Readonly<{ chil
         {/* Preload and apply critical CSS to avoid FOUC */}
         <link rel="preload" as="style" href={radixCssUrl} />
         <link rel="stylesheet" href={radixCssUrl} />
-        <link rel="preload" as="style" href={workosWidgetsCssUrl} />
-        <link rel="stylesheet" href={workosWidgetsCssUrl} />
         <link rel="preload" as="style" href={globalCssUrl} />
         <link rel="stylesheet" href={globalCssUrl} />
         {/* App icons */}

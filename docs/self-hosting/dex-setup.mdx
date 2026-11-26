@@ -1,0 +1,120 @@
+---
+title: "Dex Setup"
+description: "Configure Dex with GitHub SSO for self-hosted OpenTaco"
+---
+
+OpenTaco signs users in through [Dex](https://dexidp.io), an OpenID Connect provider that you deploy next to OpenTaco. Dex uses its GitHub connector, so users sign in with their GitHub account.
+
+The organizations a user sees in OpenTaco are their GitHub organizations. Dex puts them in the `groups` claim of the ID token, as `org:team` entries (and also `org` entries when `loadAllGroups` is used), and OpenTaco takes the part before `:`. OpenTaco has no separate organization or user management.
+
+<Note>
+  Only members of the GitHub organizations listed in the Dex `orgs` setting can sign in. A user who belongs to none of them is rejected by Dex.
+</Note>
+
+## Setup flow
+
+<Steps>
+  <Step title="Create a GitHub OAuth app">
+    In GitHub, go to **Settings > Developer settings > OAuth Apps > New OAuth App** (or the same page under your organization settings).
+
+    - Homepage URL: `https://<your-public-opentaco-url>`
+    - Authorization callback URL: `https://<your-dex-host>/dex/callback`
+
+    Generate a client secret. Keep the client ID and secret for the Dex config.
+
+    If your organization restricts OAuth app access, approve the app for that organization so Dex can read memberships.
+  </Step>
+
+  <Step title="Write the Dex config">
+    Start from the example in `self-hosting/dex/config.yaml`. The parts OpenTaco relies on:
+
+    ```yaml
+    issuer: https://<your-dex-host>/dex
+
+    storage:
+      type: sqlite3
+      config:
+        file: /var/dex/dex.db
+
+    web:
+      http: 0.0.0.0:5556
+
+    oauth2:
+      skipApprovalScreen: true
+
+    connectors:
+      - type: github
+        id: github
+        name: GitHub
+        config:
+          clientID: $GITHUB_CLIENT_ID
+          clientSecret: $GITHUB_CLIENT_SECRET
+          redirectURI: https://<your-dex-host>/dex/callback
+          orgs:
+            - name: my-github-org
+          teamNameField: slug
+
+    staticClients:
+      - id: digger-ui
+        name: OpenTaco UI
+        secretEnv: DIGGER_UI_CLIENT_SECRET
+        redirectURIs:
+          - https://<your-public-opentaco-url>/api/auth/callback
+    ```
+
+    - `orgs` lists the GitHub organizations allowed to sign in. With `orgs` set, Dex puts only the user's teams in those organizations in the `groups` claim, as `org:team`. A user must belong to at least one team of an organization to see that organization in OpenTaco; otherwise the UI shows a "No GitHub organization" page.
+    - Without `orgs`, set `loadAllGroups: true` instead. Then every GitHub user can sign in, and the `groups` claim holds all of the user's organizations (`org`) and teams (`org:team`). Dex ignores `loadAllGroups` when `orgs` is set.
+    - `teamNameField: slug` writes teams as `org:team-slug`.
+    - Set `useLoginAsID: true` in the connector config if you want the GitHub login instead of the numeric GitHub user ID as the Dex user ID.
+    - Use a persistent storage backend (for example `postgres`) for production. Dex keeps sessions and refresh tokens there.
+
+    Dex expands `$GITHUB_CLIENT_ID` and `$GITHUB_CLIENT_SECRET` from its environment, and reads the `digger-ui` client secret from `DIGGER_UI_CLIENT_SECRET`.
+  </Step>
+
+  <Step title="Deploy Dex">
+    The issuer URL must be reachable at the same address by users' browsers and by the OpenTaco UI service, which fetches the OIDC discovery document and exchanges codes server-side. In production, serve Dex over HTTPS on a public hostname.
+
+    <Tabs>
+      <Tab title="Docker Compose">
+        The Compose stack includes a `dex` service (`ghcr.io/dexidp/dex`) that mounts `self-hosting/dex/config.yaml`. Copy and fill its env file:
+
+        ```bash
+        cp self-hosting/docker-compose/dex.env.example self-hosting/docker-compose/dex.env
+        ```
+
+        For local use, the example issuer is `http://dex:5556/dex`. The UI container reaches it through the Compose network. For the browser, add `127.0.0.1 dex` to `/etc/hosts`. The GitHub OAuth app callback is then `http://dex:5556/dex/callback`.
+      </Tab>
+      <Tab title="Kubernetes">
+        Deploy Dex with the official Helm chart:
+
+        ```bash
+        helm repo add dex https://charts.dexidp.io
+        helm install dex dex/dex -n opentaco -f dex-values.yaml
+        ```
+
+        Put the Dex config above under `config:` in `dex-values.yaml`. Provide `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `DIGGER_UI_CLIENT_SECRET` through `envVars` or `envFrom` from a Kubernetes secret, and expose Dex with the chart's `ingress` values.
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Configure the UI service">
+    Set these variables on the `ui` service:
+
+    | Variable | Value |
+    | --- | --- |
+    | `DEX_ISSUER_URL` | The Dex `issuer`, for example `https://<your-dex-host>/dex` |
+    | `DEX_CLIENT_ID` | `digger-ui` |
+    | `DEX_CLIENT_SECRET` | Same value as `DIGGER_UI_CLIENT_SECRET` in Dex |
+    | `DEX_REDIRECT_URI` | `https://<your-public-opentaco-url>/api/auth/callback`, listed in the static client's `redirectURIs` |
+    | `SESSION_COOKIE_PASSWORD` | Random string of at least 32 characters |
+    | `SESSION_COOKIE_NAME` | Optional. Defaults to `digger-session` |
+    | `SESSION_COOKIE_DOMAIN` | Optional. Cookie domain, unset by default |
+
+    The UI requests the `openid email profile groups offline_access` scopes. Do not commit these values to git.
+  </Step>
+
+  <Step title="Verify login flow">
+    Open your self-hosted OpenTaco URL, sign in with GitHub, and confirm your GitHub organizations appear in the organization switcher.
+    ![](/images/self-host/self-hosting--login-page.png)
+  </Step>
+</Steps>

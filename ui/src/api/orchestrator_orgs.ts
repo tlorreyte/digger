@@ -14,7 +14,7 @@ export async function syncOrgToBackend(orgId: string, orgName: string, adminEmai
     body: JSON.stringify({ 
         org_name: orgName,
         external_id: orgId,
-        external_source: "workos",
+        external_source: "github",
         admin_email: adminEmail || null,
     })
   });
@@ -37,7 +37,7 @@ export async function getOrgSettings(
         'Content-Type': 'application/json',
         'DIGGER_ORG_ID': organizationId || '',
         'DIGGER_USER_ID': userId || '',
-        'DIGGER_ORG_SOURCE': 'workos',
+        'DIGGER_ORG_SOURCE': 'github',
         'X-Request-ID': generateRequestId(),
       }
     })
@@ -77,7 +77,7 @@ export async function updateOrgSettings(
         'Content-Type': 'application/json',
         'DIGGER_ORG_ID': organizationId || '',
         'DIGGER_USER_ID': userId || '',
-        'DIGGER_ORG_SOURCE': 'workos',
+        'DIGGER_ORG_SOURCE': 'github',
         'X-Request-ID': generateRequestId(),
       },
       body: JSON.stringify(settings)

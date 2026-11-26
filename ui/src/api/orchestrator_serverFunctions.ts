@@ -79,7 +79,7 @@ export const getRepoDetailsFn = createServerFn({method: 'GET'})
             'Authorization': `Bearer ${process.env.ORCHESTRATOR_BACKEND_SECRET}`,
             'DIGGER_ORG_ID': auth.organizationId,
             'DIGGER_USER_ID': auth.userId,
-            'DIGGER_ORG_SOURCE': 'workos',
+            'DIGGER_ORG_SOURCE': 'github',
           },
         });
 

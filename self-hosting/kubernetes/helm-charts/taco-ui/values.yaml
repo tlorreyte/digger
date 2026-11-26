@@ -47,15 +47,22 @@ ui:
     # Creates: ALLOWED_HOSTS
     allowedHosts: ""  # ALLOWED_HOSTS
     
-    # WorkOS configuration (get from https://dashboard.workos.com/)
-    # Creates: WORKOS_REDIRECT_URI, WORKOS_API_KEY, WORKOS_CLIENT_ID,
-    #          WORKOS_COOKIE_PASSWORD, WORKOS_WEBHOOK_SECRET
-    workos:
-      redirectUri: ""         # WORKOS_REDIRECT_URI (e.g., https://your-domain.com/api/auth/callback)
-      apiKey: ""             # WORKOS_API_KEY
-      clientId: ""           # WORKOS_CLIENT_ID
-      cookiePassword: ""     # WORKOS_COOKIE_PASSWORD (32 char random string)
-      webhookSecret: ""      # WORKOS_WEBHOOK_SECRET
+    # Dex OIDC configuration. Dex is not part of this chart; deploy it with the
+    # official chart (helm repo add dex https://charts.dexidp.io; chart "dex")
+    # using a GitHub connector and a "digger-ui" static client.
+    # Creates: DEX_ISSUER_URL, DEX_CLIENT_ID, DEX_CLIENT_SECRET, DEX_REDIRECT_URI
+    dex:
+      issuerUrl: ""          # DEX_ISSUER_URL (e.g., https://dex.your-domain.com/dex)
+      clientId: "digger-ui"  # DEX_CLIENT_ID
+      clientSecret: ""       # DEX_CLIENT_SECRET
+      redirectUri: ""        # DEX_REDIRECT_URI (e.g., https://your-domain.com/api/auth/callback)
+
+    # Session cookie configuration
+    # Creates: SESSION_COOKIE_PASSWORD, SESSION_COOKIE_NAME, SESSION_COOKIE_DOMAIN
+    session:
+      cookiePassword: ""     # SESSION_COOKIE_PASSWORD (at least 32 characters)
+      cookieName: ""         # SESSION_COOKIE_NAME (optional, defaults to digger-session)
+      cookieDomain: ""       # SESSION_COOKIE_DOMAIN (optional)
     
     # PostHog configuration (optional)
     # Creates: VITE_POSTHOG_KEY, VITE_POSTHOG_HOST

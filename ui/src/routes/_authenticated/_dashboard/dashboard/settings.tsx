@@ -6,8 +6,8 @@ export const Route = createFileRoute(
 )({
   component: RouteComponent,
   loader: async ({ context }) => {
-    const { user, organisationId, role } = context
-    return { user, organisationId, role }
+    const { user, organisationId } = context
+    return { user, organisationId }
   },
   beforeLoad: (({ location, search }) => {
     if (location.pathname === '/dashboard/settings') {

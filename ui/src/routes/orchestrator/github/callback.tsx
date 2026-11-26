@@ -25,7 +25,7 @@ export const Route = createFileRoute('/orchestrator/github/callback')({
             headers: {
               Authorization: `Bearer ${process.env.ORCHESTRATOR_BACKEND_SECRET}`,
               DIGGER_ORG_ID: organisationId || '',
-              DIGGER_ORG_SOURCE: 'workos',
+              DIGGER_ORG_SOURCE: 'github',
               DIGGER_USER_ID: user.id,
             },
             body: JSON.stringify({ installation_id: installationId }),

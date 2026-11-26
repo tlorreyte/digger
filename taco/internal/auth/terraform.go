@@ -708,12 +708,6 @@ func (h *Handler) getServerAuthConfig() (*serverAuthConfig, error) {
     log.Printf("OIDC: Configuration loaded - Issuer: %s, Client ID: %s, Auth URL: %s, Token URL: %s", 
         issuer, clientID, authURL, tokenURL)
     
-    // Provide defaults for WorkOS
-    if issuer == "https://api.workos.com/user_management" {
-        if authURL == "" { authURL = "https://api.workos.com/user_management/authorize" }
-        if tokenURL == "" { tokenURL = "https://api.workos.com/user_management/token" }
-    }
-    
     return &serverAuthConfig{
         Issuer:                issuer,
         ClientID:              clientID,
